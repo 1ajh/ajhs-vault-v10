@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>𝙖𝙟𝙝'𝙨 Education 𝙫𝟭𝟬</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    font-family: 'Verdana', 'Arial', sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #000;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+}
+
+header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: #111;
+}
+
+header input,
+header select,
+header button {
+  background: #222;
+  color: #fff;
+  border: none;
+  padding: 6px 8px;
+}
+
+header button:hover,
+header input:hover,
+header select:hover {
+  background: #333;
+}
+
+#container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+
+.zone {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: transform 0.1s ease-in-out;
+}
+
+.zone img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.1s ease-in-out;
+}
+
+.zone:hover {
+  transform: scale(1.1);
+}
+
+.zone:hover img {
+  transform: scale(1.1);
+}
+
+.zone-name {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 6px;
+  background: rgba(0,0,0,0.75);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+}
+
+.zone:hover .zone-name {
+  opacity: 1;
+}
+
+#viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.96);
+  display: none;
+  flex-direction: column;
+  z-index: 999;
+}
+
+#viewer iframe {
+  flex: 1;
+  border: none;
+}
+
+#viewer-controls {
+  padding: 10px;
+  text-align: center;
+}
+
+#viewer-controls button {
+  margin: 0 6px;
+  padding: 6px 10px;
+  background: #222;
+  border: none;
+  color: #fff;
+}
+
+#viewer-controls button:hover {
+  background: #333;
+}
+</style>
+</head>
+
+<body>
+   <script>
+let inFrame
+try {
+    inFrame = window !== top
+} catch (e) {
+    inFrame = true
+}
+
+if (!inFrame && !navigator.userAgent.includes("Firefox")) {
+    const popup = open("about:blank", "_blank")
+    if (!popup || popup.closed) {
+        alert(" The following tab shows in your history. Allow popups and redirects to hide this from showing up in your history. do NOT do this if your browser doesnt support iframes")
+	} else {
+        const doc = popup.document
+        const iframe = doc.createElement("iframe")
+        const style = iframe.style
+        const link = doc.createElement("link")
+
+        const name = localStorage.getItem("name") || "Home";
+        const icon = localStorage.getItem("icon") || "https://upload.wikimedia.org/wikipedia/commons/5/59/Google_Classroom_Logo.png";
+        
+        doc.title = name;
+        link.rel = "icon";
+        link.href = icon;
+        
+        iframe.src = location.href
+        style.position = "fixed"
+        style.top = style.bottom = style.left = style.right = 0
+        style.border = style.outline = "none"
+        style.width = style.height = "100%"
+
+        doc.head.appendChild(link);
+        doc.body.appendChild(iframe)
+        location.replace("https://classroom.google.com")
+    }
+}
+</script>
+<header>
+    𝙖𝙟𝙝'𝙨 𝙫𝙖𝙪𝙡𝙩 𝙫𝟭𝟬
+  <input id="search" placeholder="Search">
+  <select id="tags"></select>
+  <button id="refresh">Refresh</button>
+</header>
+
+<div id="container"></div>
+
+<div id="viewer">
+  <iframe id="frame"></iframe>
+  <div id="viewer-controls">
+    <button onclick="closeZone()">Close</button>
+    <button onclick="fullscreen()">Fullscreen</button>
+  </div>
+</div>
+
+<script>
+/* ===== TRUE UNICODE OBFUSCATION ===== */
+
+const MAP = {
+  A:"А",B:"В",C:"С",D:"Ꭰ",E:"Е",F:"Ғ",G:"Ԍ",H:"Н",I:"Ι",J:"Ј",
+  K:"Κ",L:"Ꮮ",M:"М",N:"Ν",O:"О",P:"Р",Q:"Ԛ",R:"Ꭱ",S:"Ѕ",T:"Т",
+  U:"Ս",V:"Ѵ",W:"Ԝ",X:"Х",Y:"Υ",Z:"Ζ",
+  a:"а",b:"Ь",c:"с",d:"ԁ",e:"е",f:"ғ",g:"ɡ",h:"һ",i:"і",j:"ј",
+  k:"κ",l:"ⅼ",m:"ｍ",n:"ո",o:"о",p:"р",q:"զ",r:"г",s:"ѕ",
+  t:"т",u:"ս",v:"ѵ",w:"ѡ",x:"х",y:"у",z:"ᴢ"
+};
+
+const REV = Object.fromEntries(Object.entries(MAP).map(e => [e[1], e[0]]));
+
+const obf = s => [...s].map(c => MAP[c] || c).join("");
+const deobf = s => [...s].map(c => REV[c] || c).join("");
+
+/* ===== APP LOGIC ===== */
+
+const COVER = "https://cdn.jsdelivr.net/gh/gn-math/covers@main";
+const HTML = "https://cdn.jsdelivr.net/gh/gn-math/html@main";
+
+const container = document.getElementById("container");
+const search = document.getElementById("search");
+const tags = document.getElementById("tags");
+const frame = document.getElementById("frame");
+const viewer = document.getElementById("viewer");
+
+let zones = [];
+let current = null;
+
+async function loadZones() {
+  const res = await fetch("https://cdn.jsdelivr.net/gh/gn-math/assets@latest/zones.json");
+  const raw = await res.json();
+
+  // SKIP FIRST ZONE INTENTIONALLY
+  zones = raw.slice(1).map(z => ({
+    name: obf(z.name),
+    cover: obf(z.cover),
+    url: obf(z.url),
+    tags: (z.special || []).map(obf)
+  }));
+
+  buildTags();
+  render(zones);
+}
+
+function buildTags() {
+  const all = [...new Set(zones.flatMap(z => z.tags))];
+  tags.innerHTML = `<option value="">All</option>` +
+    all.map(t => `<option>${deobf(t)}</option>`).join("");
+}
+
+function render(list) {
+  container.innerHTML = "";
+  list.forEach(z => {
+    const d = document.createElement("div");
+    d.className = "zone";
+
+    const img = document.createElement("img");
+    img.src = deobf(z.cover).replace("{COVER_URL}", COVER);
+
+    const name = document.createElement("div");
+    name.className = "zone-name";
+    name.textContent = deobf(z.name);
+
+    d.append(img, name);
+    d.onclick = () => openZone(z);
+
+    container.appendChild(d);
+  });
+}
+
+function openZone(z) {
+  current = z;
+  viewer.style.display = "flex";
+
+  fetch(deobf(z.url).replace("{HTML_URL}", HTML))
+    .then(r => r.text())
+    .then(html => frame.srcdoc = html);
+}
+
+function closeZone() {
+  frame.srcdoc = "";
+  viewer.style.display = "none";
+}
+
+function fullscreen() {
+  frame.requestFullscreen?.();
+}
+
+/* ===== FILTERS ===== */
+
+search.oninput = () => {
+  const q = search.value.toLowerCase();
+  render(zones.filter(z => deobf(z.name).toLowerCase().includes(q)));
+};
+
+tags.onchange = () => {
+  render(
+    tags.value
+      ? zones.filter(z => z.tags.map(deobf).includes(tags.value))
+      : zones
+  );
+};
+
+document.getElementById("refresh").onclick = loadZones;
+
+loadZones();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Education</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+        }
+    a {
+  margin: 0 6px;
+  padding: 6px 10px;
+  background: #222;
+  border: none;
+  color: #fff;
+}
+    </style>
+</head>
+<body>
+    <script>
+let inFrame
+try {
+    inFrame = window !== top
+} catch (e) {
+    inFrame = true
+}
+
+if (!inFrame && !navigator.userAgent.includes("Firefox")) {
+    const popup = open("about:blank", "_blank")
+    if (!popup || popup.closed) {
+        alert(" The following tab shows in your history. Allow popups and redirects to hide this from showing up in your history. do NOT do this if your browser doesnt support iframes")
+	} else {
+        const doc = popup.document
+        const iframe = doc.createElement("iframe")
+        const style = iframe.style
+        const link = doc.createElement("link")
+
+        const name = localStorage.getItem("name") || "Home";
+        const icon = localStorage.getItem("icon") || "https://upload.wikimedia.org/wikipedia/commons/5/59/Google_Classroom_Logo.png";
+        
+        doc.title = name;
+        link.rel = "icon";
+        link.href = icon;
+        
+        iframe.src = location.href
+        style.position = "fixed"
+        style.top = style.bottom = style.left = style.right = 0
+        style.border = style.outline = "none"
+        style.width = style.height = "100%"
+
+        doc.head.appendChild(link);
+        doc.body.appendChild(iframe)
+        location.replace("https://classroom.google.com")
+    }
+}
+</script>
+    <h1>welcome to 𝙖𝙟𝙝'𝙨 𝙫𝙖𝙪𝙡𝙩 𝙫𝟭𝟬</h1>
+    <a href="p/index.html">p</a>
+    <a href="g.html">g</a>
+</body>
+</html>

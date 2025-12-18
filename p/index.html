@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Browser</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#202124;color:#fff;font-family:system-ui,sans-serif;overflow:hidden}
+#tabs{display:flex;background:#292a2d;height:36px;align-items:center;gap:2px;padding:0 4px;overflow-x:auto;overflow-y:hidden}
+.tab{display:flex;align-items:center;gap:8px;background:#202124;border-radius:8px 8px 0 0;padding:0 12px;height:32px;cursor:pointer;font-size:13px;white-space:nowrap;min-width:120px;max-width:240px}
+.tab.active{background:#35363a}
+.tab span{flex:1;overflow:hidden;text-overflow:ellipsis}
+.tab button{background:none;border:none;color:#fff;cursor:pointer;opacity:.6;font-size:16px;width:18px;height:18px;padding:0;line-height:1}
+.tab button:hover{opacity:1}
+#new{background:#292a2d;border:none;color:#fff;cursor:pointer;font-size:20px;padding:0 12px;opacity:.6}
+#new:hover{opacity:1}
+#bar{display:flex;background:#35363a;height:40px;padding:8px;gap:8px}
+#url{flex:1;background:#202124;border:1px solid #5f6368;border-radius:20px;color:#fff;padding:0 16px;font-size:14px;outline:none}
+#url:focus{border-color:#8ab4f8}
+#view{position:relative;height:calc(100vh - 76px)}
+iframe{position:absolute;border:0;width:100%;height:100%;display:none}
+iframe.active{display:block}
+</style>
+</head>
+<body>
+<div id="tabs">
+<div class="tab active" data-id="0"><span>New Tab</span><button onclick="close(0)">×</button></div>
+<button id="new" onclick="add()">+</button>
+</div>
+<div id="bar">
+<input id="url" placeholder="Search or enter URL" onkeydown="if(event.key==='Enter')go()">
+</div>
+<div id="view"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3/dist/uv.bundle.js"></script>
+<script>
+// UV Config (inline to avoid extra file)
+self.__uv$config={
+  prefix:'/p/service/',
+  bare:'https://tomp.app/',
+  encodeUrl:Ultraviolet.codec.xor.encode,
+  decodeUrl:Ultraviolet.codec.xor.decode,
+  handler:'/uv/uv.handler.js',
+  client:'/uv/uv.client.js',
+  bundle:'/uv/uv.bundle.js',
+  config:'/uv/uv.config.js',
+  sw:'/uv/uv.sw.js'
+};
+
+let id=0,cur=0;
+const tabs=new Map();
+
+// Register service worker
+if('serviceWorker'in navigator){
+  navigator.serviceWorker.register('/p/uv-sw.js',{scope:'/p/service/'}).catch(e=>console.error('SW failed:',e));
+}
+
+// Initialize first tab
+tabs.set(0,{id:0,url:'',frame:null});
+
+function encode(url){
+  if(!url.includes('.')||url.includes(' '))return'/p/service/'+__uv$config.encodeUrl('https://www.google.com/search?q='+encodeURIComponent(url));
+  if(!/^https?:\/\//i.test(url))url='https://'+url;
+  return'/p/service/'+__uv$config.encodeUrl(url);
+}
+
+function go(){
+  const url=document.getElementById('url').value.trim();
+  if(!url)return;
+
+  const tab=tabs.get(cur);
+  if(!tab.frame){
+    const f=document.createElement('iframe');
+    f.className='active';
+    f.id='f'+cur;
+    document.getElementById('view').appendChild(f);
+    tab.frame=f;
+  }
+
+  tab.url=url;
+  tab.frame.src=encode(url);
+
+  // Update tab title
+  const t=document.querySelector(`.tab[data-id="${cur}"] span`);
+  t.textContent=url.substring(0,30);
+}
+
+function add(){
+  id++;
+  cur=id;
+
+  tabs.set(id,{id,url:'',frame:null});
+
+  const t=document.createElement('div');
+  t.className='tab active';
+  t.dataset.id=id;
+  t.innerHTML=`<span>New Tab</span><button onclick="close(${id})">×</button>`;
+  t.onclick=(e)=>{if(e.target.tagName!=='BUTTON')select(id)};
+
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('iframe').forEach(x=>x.classList.remove('active'));
+  document.getElementById('tabs').insertBefore(t,document.getElementById('new'));
+  document.getElementById('url').value='';
+  document.getElementById('url').focus();
+}
+
+function select(i){
+  cur=i;
+  document.querySelectorAll('.tab').forEach(x=>{
+    x.classList.toggle('active',x.dataset.id==i);
+  });
+  document.querySelectorAll('iframe').forEach(x=>{
+    x.classList.toggle('active',x.id==='f'+i);
+  });
+  const tab=tabs.get(i);
+  document.getElementById('url').value=tab.url;
+}
+
+function close(i){
+  event.stopPropagation();
+
+  if(tabs.size===1)return;
+
+  const tab=tabs.get(i);
+  if(tab.frame)tab.frame.remove();
+  tabs.delete(i);
+
+  document.querySelector(`.tab[data-id="${i}"]`).remove();
+
+  if(cur===i){
+    const next=[...tabs.keys()][0];
+    select(next);
+  }
+}
+
+// Setup first tab click handler
+document.querySelector('.tab').onclick=(e)=>{if(e.target.tagName!=='BUTTON')select(0)};
+document.getElementById('url').focus();
+</script>
+</body>
+</html>
